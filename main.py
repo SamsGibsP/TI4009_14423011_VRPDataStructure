@@ -13,6 +13,8 @@
      ├── node.py              <- kelas Node
      ├── cvrp_instance.py     <- kelas CVRPInstance
      ├── import_data.py       <- kelas InstanceReader
+     ├── solution.py          <- kelas Route dan Solution
+     ├── cvrp_solver.py       <- kelas CVRPSolver
      └── main.py              <- file ini
 ===============================================================================
 """
@@ -21,6 +23,8 @@ import os
 
 from cvrp_instance import CVRPInstance
 from import_data import InstanceReader
+from solution import Solution, Route
+from cvrp_solver import CVRPSolver
 
 
 class Main:
@@ -38,13 +42,7 @@ class Main:
     # =====================================================================
     @staticmethod
     def get_instance_path() -> str:
-        """
-        Membangun path file instance relatif terhadap lokasi main.py.
-
-        Cara ini dipakai agar program tetap berjalan meskipun working directory
-        VS Code berbeda dengan folder proyek. Memakai path relatif biasa seperti
-        "A/A-n32-k5.vrp" sering menyebabkan FileNotFoundError.
-        """
+        """Membangun path file instance relatif terhadap lokasi main.py."""
         base_dir = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(base_dir, Main.INSTANCE_FOLDER, Main.INSTANCE_FILE)
 
@@ -76,8 +74,21 @@ class Main:
         Main.demo_kelas_node(instance)
         Main.demo_kelas_instance(instance)
 
-        print("Seluruh data instance sudah tersimpan dengan benar "
-              "dalam bentuk objek.\n")
+        # -----------------------------------------------------------------
+        # LANGKAH 4 : UJI KELAS SOLUTION DAN ROUTE
+        # -----------------------------------------------------------------
+        print("[LANGKAH 4] Uji pembuatan objek kelas Route dan Solution\n")
+        Main.demo_kelas_solution(instance)
+
+        # -----------------------------------------------------------------
+        # LANGKAH 5 : OPTIMASI SOLUSI CVRP HINGGA NILAI OPTIMUM
+        # -----------------------------------------------------------------
+        print("[LANGKAH 5] Optimasi Penyelesaian Kasus CVRP (Clarke-Wright + Local Search)\n")
+        solver = CVRPSolver(instance)
+        best_solution = solver.solve()
+        best_solution.print_summary()
+
+        print("Program selesai dijalankan dengan sukses.\n")
 
     # =====================================================================
     # DEMONSTRASI PENGGUNAAN KELAS
@@ -140,9 +151,32 @@ class Main:
         print(f" instance.is_feasible_instance()  : {instance.is_feasible_instance()}")
         print()
 
-        # Contoh iterasi langsung atas objek instance
         total = sum(node.demand for node in instance if node.is_customer())
         print(f" Iterasi 'for node in instance' -> total demand : {total:.0f}")
+        print("-" * 70 + "\n")
+
+    @staticmethod
+    def demo_kelas_solution(instance: CVRPInstance) -> None:
+        """Menunjukkan cara membuat dan mengevaluasi objek Route dan Solution."""
+        print("-" * 70)
+        print(" DEMO KELAS Route & Solution (Contoh Sederhana)")
+        print("-" * 70)
+        # Buat rute dummy contoh
+        node_2 = instance.get_node(2)
+        node_3 = instance.get_node(3)
+        node_4 = instance.get_node(4)
+
+        sample_route = Route(instance, nodes=[node_2, node_3, node_4])
+        print(f" Objek Route contoh          : {sample_route}")
+        print(f" Total Demand Rute           : {sample_route.total_demand:.0f}")
+        print(f" Kelayakan Kapasitas Rute    : {sample_route.is_feasible}")
+        print(f" Total Jarak Rute (Cost)     : {sample_route.distance:.0f}")
+        print()
+
+        dummy_solution = Solution(instance)
+        dummy_solution.add_route(sample_route)
+        print(f" Objek Solution contoh       : {dummy_solution!r}")
+        print(f" Status Validitas Solusi     : {dummy_solution.is_feasible} (False karena belum melayani semua node)")
         print("-" * 70 + "\n")
 
 
